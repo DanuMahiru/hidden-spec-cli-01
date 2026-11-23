@@ -141,9 +141,14 @@ function occurrences(lines: string[], old: string[], tier: number): number[] {
   return out;
 }
 
+/** The tiers to try, in order: exact only when strict, otherwise exact, trailing-ws, both-ends. */
+function tiersFor(strict: boolean): number[] {
+  return strict ? [0] : [0, 1, 2];
+}
+
 /** The first tier (0, then 1, then 2; only 0 when strict) with an occurrence at or after `from`, and its first one. */
 function findFirst(lines: string[], old: string[], from: number, strict: boolean): { tier: number; start: number } | null {
-  const tiers = strict ? [0] : [0, 1, 2];
+  const tiers = tiersFor(strict);
   for (const t of tiers) {
     const occ = occurrences(lines, old, t).filter((i) => i >= from);
     if (occ.length > 0) return { tier: t, start: occ[0] };
@@ -153,7 +158,7 @@ function findFirst(lines: string[], old: string[], from: number, strict: boolean
 
 /** The first tier with an occurrence anywhere, and every occurrence at that tier. */
 function findAll(lines: string[], old: string[], strict: boolean): { tier: number; starts: number[] } | null {
-  const tiers = strict ? [0] : [0, 1, 2];
+  const tiers = tiersFor(strict);
   for (const t of tiers) {
     const occ = occurrences(lines, old, t);
     if (occ.length > 0) return { tier: t, starts: occ };
@@ -163,7 +168,7 @@ function findAll(lines: string[], old: string[], strict: boolean): { tier: numbe
 
 /** The occurrence at the found tier nearest to `target` (ties: the earlier one). */
 function findNearest(lines: string[], old: string[], target: number, strict: boolean): { tier: number; start: number } | null {
-  const tiers = strict ? [0] : [0, 1, 2];
+  const tiers = tiersFor(strict);
   for (const t of tiers) {
     const occ = occurrences(lines, old, t);
     if (occ.length === 0) continue;
@@ -687,7 +692,7 @@ function parseV4a(lines: string[], strict: boolean): Edit[] {
             cursor = fileLines.length;
           } else {
             let found: { tier: number; start: number } | null = null;
-            const tiers = strict ? [0] : [0, 1, 2];
+            const tiers = tiersFor(strict);
             for (const t of tiers) {
               const occ = occurrences(fileLines, ch.old, t).filter((x) => x >= cursor && x + ch.old.length === fileLines.length);
               if (occ.length > 0) {
